@@ -1,6 +1,7 @@
 #include "idt.h"
 #include "init.h"
 #include "io.h"
+#include "filesystem.h"
 #include "memory.h"
 #include "serial.h"
 #include "string.h"
@@ -18,4 +19,5 @@ void main()
     init_idt();
     init_paging();
     printRegs();
+    init_filesystem();
 }

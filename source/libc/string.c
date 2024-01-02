@@ -127,4 +127,44 @@ char *strrchr(const string *s, int c)
     return NULL;
 }
 
+unsigned int strcspn(const char *s1, const char *s2)
+{
+    unsigned int len =0;
+    //return 0 if any one is NULL
+    if((s1 == NULL) || (s2 == NULL))
+        return len;
+    //till not get null character
+    while(*s1)
+    {
+        //return s1 char position if found in s2
+        if(strchr(s2,*s1))
+        {
+            return len;
+        }
+        else
+        {
+            //increment s1
+            s1++;
+            //increment len variable
+            len++;
+        }
+    }
+    return len;
+}
+
+unsigned int strspn(const char *s1, const char *s2)
+{
+    unsigned int len =0;
+    //return 0 if any one is NULL
+    if((s1 == NULL) || (s2 == NULL))
+        return len;
+    //return s1 char position if found in s2
+    //if not found return NULL
+    while(*s1 && strchr(s2,*s1++))
+    {
+        len++;
+    }
+    return len;
+}
+
 // string initstring(const char* s);

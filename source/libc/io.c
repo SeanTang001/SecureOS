@@ -40,13 +40,13 @@ int printch(char c)
     terminal_update_cursor();
 }
 
-void unitTest(const int errorNum,const char* errorMessage, const int bool){
+void unitTest(const int errorNum,const char* errorMessage, const int hlt){
     terminal_put64(errorNum);
     terminal_putchar(':');
     terminal_putchar(' ');
     printf(errorMessage);
     
-    if(bool==1)  asm("hlt");
+    if(hlt==1)  asm("hlt");
 }
 
 void printRegs(){

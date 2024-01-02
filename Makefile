@@ -12,13 +12,15 @@ SRC_DIR=source
 KERNEL_DIR=$(SRC_DIR)/kernel
 BOOT_DIR=$(SRC_DIR)/boot
 LIBC_DIR=$(SRC_DIR)/libc
+LFS_DIR=littlefs
 
 INCLUDES=$(KERNEL_DIR)/include
 LIBC=$(LIBC_DIR)/include
 
+
 GCC=$(PREFIX)-gcc
 # -mgeneral-regs-only needed for using attribute((interrupt)) for isr
-GCC_FLAGS=-ffreestanding -I$(INCLUDES) -I$(LIBC) -O2 -mgeneral-regs-only
+GCC_FLAGS= -ffreestanding -I$(LIBC) -I$(LFS_DIR) -I$(INCLUDES) -O2 -mgeneral-regs-only
 FORMAT=clang-format -i
 
 default: 
@@ -29,15 +31,22 @@ boot: $(BOOT_DIR)/*.asm
 	$(ASM) $(BOOT_DIR)/boot-sect.asm -i $(BOOT_DIR) -f bin -o $(BUILD_DIR)/boot-sect.bin
 
 LIBC_SRC=$(wildcard $(LIBC_DIR)/*.c)
-OBJ_FILES=$(patsubst $(LIBC_DIR)/%.c,$(BUILD_DIR)/%.o,$(LIBC_SRC)) \
-		  $(patsubst $(KERNEL_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(KERNEL_DIR)/*.c)) \
-		  $(patsubst $(KERNEL_DIR)/%.asm,$(BUILD_DIR)/%.o,$(wildcard $(KERNEL_DIR)/*.asm))
+OBJ_FILES= $(patsubst $(LIBC_DIR)/%.c,$(BUILD_DIR)/%.o,$(LIBC_SRC)) \
+		$(patsubst $(KERNEL_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(KERNEL_DIR)/*.c)) \
+		$(patsubst $(KERNEL_DIR)/%.asm,$(BUILD_DIR)/%.o,$(wildcard $(KERNEL_DIR)/*.asm)) \
+		$(patsubst $(LFS_DIR)/bd/%.c,$(BUILD_DIR)/%.o,$(LFS_DIR)/bd/lfs_rambd.c) \
+		$(patsubst $(LFS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(LFS_DIR)/*.c)) \
+
 $(BUILD_DIR)/%.o: $(KERNEL_DIR)/%.c
 	$(GCC) $(GCC_FLAGS) -c $< -o $@
 $(BUILD_DIR)/%.o: $(KERNEL_DIR)/%.asm
 	$(ASM) -i $(INCLUDES) $< -f elf32 -o $@
 $(BUILD_DIR)/%.o: $(LIBC_DIR)/%.c
 	$(GCC) $(GCC_FLAGS) -c $< -o $@
+$(BUILD_DIR)/%.o: $(LFS_DIR)/%.c
+	$(GCC) $(GCC_FLAGS) -D LFS_NO_WARN -D LFS_NO_MALLOC -D LFS_NO_INTRINSICS -D LFS_NO_ASSERT -D SECUREOS -c $< -o $@
+$(BUILD_DIR)/%.o: $(LFS_DIR)/bd/%.c
+	$(GCC) $(GCC_FLAGS) -D LFS_NO_WARN -D LFS_NO_MALLOC -D LFS_NO_INTRINSICS -D LFS_NO_ASSERT -D SECUREOS -c $< -o $@
 
 kernel: $(OBJ_FILES)
 	$(LINKER) -T $(LINKER_FILE) -o $(BUILD_DIR)/kernel.elf -z noexecstack $(OBJ_FILES) 
@@ -59,7 +68,7 @@ connect:
 
 gdb: default
 	# Need to have GEF installed for this to work
-	$(QEMU) -drive format=raw,file=$(BUILD_DIR)/os_image -s -S & gdb -ex "gef-remote --qemu-user localhost 1234" build/kernel.elf
+	$(QEMU) -drive format=raw,file=$(BUILD_DIR)/os_image -s -S #& gdb -ex "gef-remote --qemu-user localhost 1234" build/kernel.elf
 
 dockerun:
 	$(QEMU) -drive format=raw,file=$(BUILD_DIR)/os_image -serial stdio
